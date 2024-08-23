@@ -78,11 +78,11 @@ func newDayTemplate() *template.Template {
 - [ ] time sheet
 {{-  end }}
 
-## Pomodoro Intentions
-- 
+## Resistance
 
-## Notes Added
--
+Anything that slows you down or you find frustrating
+
+- 
 
 ## TODO
 
@@ -95,7 +95,7 @@ func newDayTemplate() *template.Template {
 func writeNewDay(newDayT *template.Template, newDayArgs NewDayArgs, timeNow time.Time) (newDataFilePath string, fileWriteError error) {
 	// reposPath := os.Getenv("REPOS_PATH")
 	// TODO - make the folder rotation be automated eg Q2 to Q3
-	filePath := fmt.Sprintf("/Users/gb0218/vaults/work/00-dev-log/2024_Q3/%d-%d.md", timeNow.Month(), timeNow.Day())
+	filePath := fmt.Sprintf("/Users/gb0218/vaults/work/00-dev-log/2024_Q3/%d-%d-%d.md", timeNow.Month(), timeNow.Day(), timeNow.Year())
 	fmt.Printf("Filepath: %s\n", filePath)
 	var file *os.File
 
