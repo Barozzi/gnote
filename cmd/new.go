@@ -14,8 +14,9 @@ import (
 )
 
 type NewDayArgs struct {
-	Day           string // Formatted Day for the header
-	ShowTimesheet bool
+	Day                  string // Formatted Day for the header
+	ShowTimesheet        bool
+	ShowWorkingWednesday bool
 }
 
 // newCmd represents the new command
@@ -26,7 +27,8 @@ var newCmd = &cobra.Command{
 		timeNow := time.Now()
 		formattedDay := fmt.Sprintf("%s, %d %s %d\n", timeNow.Weekday(), timeNow.Day(), timeNow.Month().String(), timeNow.Year())
 		showTimesheet := timeNow.Weekday() == time.Friday
-		newDayArgs := NewDayArgs{formattedDay, showTimesheet}
+		showWorkingWednesday := timeNow.Weekday() == time.Wednesday
+		newDayArgs := NewDayArgs{formattedDay, showTimesheet, showWorkingWednesday}
 
 		newDayT := newDayTemplate()
 
@@ -77,10 +79,11 @@ func newDayTemplate() *template.Template {
 {{- if .ShowTimesheet }}
 - [ ] time sheet
 {{-  end }}
+{{- if .ShowWorkingWednesday}}
+- [ ] working Wednesday
+{{-  end }}
 
-## Resistance
-
-Anything that slows you down or you find frustrating
+## Resistance: ( Anything that slows you down or you find frustrating )
 
 - 
 
