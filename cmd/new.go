@@ -17,6 +17,7 @@ type NewDayArgs struct {
 	Day                  string // Formatted Day for the header
 	ShowTimesheet        bool
 	ShowWorkingWednesday bool
+	ShowExpenseTodo      bool
 }
 
 // newCmd represents the new command
@@ -28,7 +29,8 @@ var newCmd = &cobra.Command{
 		formattedDay := fmt.Sprintf("%s, %d %s %d\n", timeNow.Weekday(), timeNow.Day(), timeNow.Month().String(), timeNow.Year())
 		showTimesheet := timeNow.Weekday() == time.Friday
 		showWorkingWednesday := timeNow.Weekday() == time.Wednesday
-		newDayArgs := NewDayArgs{formattedDay, showTimesheet, showWorkingWednesday}
+		showExpenseTodo := isLastWednesday(timeNow)
+		newDayArgs := NewDayArgs{formattedDay, showTimesheet, showWorkingWednesday, showExpenseTodo}
 
 		newDayT := newDayTemplate()
 
@@ -54,18 +56,23 @@ var newCmd = &cobra.Command{
 	},
 }
 
+func isLastWednesday(date time.Time) bool {
+	// Get the last day of the month
+	lastDay := time.Date(date.Year(), date.Month()+1, 0, 0, 0, 0, 0, date.Location())
+
+	// Find the last Wednesday
+	for lastDay.Weekday() != time.Wednesday {
+		lastDay = lastDay.AddDate(0, 0, -1)
+	}
+
+	// Compare the given date with the last Wednesday
+	return date.Year() == lastDay.Year() &&
+		date.Month() == lastDay.Month() &&
+		date.Day() == lastDay.Day()
+}
+
 func init() {
 	rootCmd.AddCommand(newCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// newCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// newCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func newDayTemplate() *template.Template {
@@ -82,6 +89,9 @@ func newDayTemplate() *template.Template {
 {{- if .ShowWorkingWednesday}}
 - [ ] working Wednesday
 {{-  end }}
+{{- if .ShowExpenseTodo}}
+- [ ] WFH expenses in Concur
+{{-  end }}
 
 ## Resistance: ( Anything that slows you down or you find frustrating )
 
@@ -96,9 +106,8 @@ func newDayTemplate() *template.Template {
 }
 
 func writeNewDay(newDayT *template.Template, newDayArgs NewDayArgs, timeNow time.Time) (newDataFilePath string, fileWriteError error) {
-	// reposPath := os.Getenv("REPOS_PATH")
 	// TODO - make the folder rotation be automated eg Q2 to Q3
-	filePath := fmt.Sprintf("/Users/gb0218/vaults/work/00-dev-log/2024_Q3/%d-%d-%d.md", timeNow.Month(), timeNow.Day(), timeNow.Year())
+	filePath := fmt.Sprintf("/Users/gb0218/vaults/work/00-dev-log/2024_Q4/%d-%d-%d.md", timeNow.Month(), timeNow.Day(), timeNow.Year())
 	fmt.Printf("Filepath: %s\n", filePath)
 	var file *os.File
 
