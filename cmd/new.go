@@ -93,11 +93,11 @@ func newDayTemplate() *template.Template {
 - [ ] WFH expenses in Concur
 {{-  end }}
 
-## Resistance: ( Anything that slows you down or you find frustrating )
+## What is preventing you?
 
 - 
 
-## TODO
+## What do you want to accomplish today?
 
 - [ ]
 `
