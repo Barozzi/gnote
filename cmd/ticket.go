@@ -107,11 +107,13 @@ func makeTicket(ticketArgs TicketArgs) error {
 func investigationTemplate() *template.Template {
 	const tmpl = `# [[{{.Ticket}}]] - Investigation
 
-## Related Code
+## What is the problem you are trying to solve? (5Why)
 
-## Services involved
+## Related Code (filenames, or snippets)
 
-## Tests Needed
+## What do you think? What do you know?
+
+## If you were creating a new solution from scratch, what would it look like?
 
 `
 	return template.Must(template.New("DescTemplate").Parse(tmpl))
@@ -122,13 +124,13 @@ func estimateTemplate() *template.Template {
 
 ## If this ticket was not completed by the date estimated, please describe why.
 
-Were there interruptions?:
+### Were there interruptions?:
 
-Was there something that you did not understand?: 
+### Was there something that you did not understand?: 
 
-Does the code require a refactor before continuing?: 
+### Does the code require a refactor before continuing?: 
 
-Do you need help from another team member?: 
+### Do you need help from another team member?: 
 
 `
 	return template.Must(template.New("DescTemplate").Parse(tmpl))
@@ -153,8 +155,8 @@ func todoTemplate() *template.Template {
 ## TODO
 
   - [ ] Describe work to be done
+  - [ ] Investigate
   - [ ] Make a feature branch
-  - [ ] 
 
 `
 	return template.Must(template.New("TodoTemplate").Parse(todoTemplate))
