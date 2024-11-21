@@ -107,7 +107,7 @@ func investigationTemplate() *template.Template {
 
 ## Related Code (filenames, or snippets)
 
-## What do you think? What do you know?
+## Which docs have you consulted?
 
 ## If you were creating a new solution from scratch, what would it look like?
 
