@@ -14,17 +14,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-/*
-* This does:
-* - create new folder in work/01-projects
-* - create main note in new folder
-* - create an Investigation note
-* - create an Estimate note with a DATE as the name of the file, so that when I pass the date I can be reminded to reevaluate my approach.
-* - create an TODO note
- */
-
 type TicketArgs struct {
 	Ticket   string
+	Tag      string
 	Estimate int
 }
 
@@ -41,13 +33,17 @@ var ticketCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var (
 			ticket   string
+			tag      string
 			estimate int
 		)
 		form := huh.NewForm(
 			huh.NewGroup(
 				huh.NewInput().
 					Title("What is the ticket number?").
-					Value(&ticket), // store the chosen option in the "burger" variable
+					Value(&ticket),
+				huh.NewInput().
+					Title("What Tag should this ticket use?").
+					Value(&tag),
 				huh.NewSelect[int]().
 					Title("How much work will this take?").
 					Options(
@@ -63,7 +59,7 @@ var ticketCmd = &cobra.Command{
 			fmt.Println(err)
 			return
 		}
-		makeTicket(TicketArgs{ticket, estimate})
+		makeTicket(TicketArgs{ticket, tag, estimate})
 	},
 }
 
@@ -137,7 +133,15 @@ func estimateTemplate() *template.Template {
 }
 
 func descTemplate() *template.Template {
-	const tmpl = `# [[{{.Ticket}}]]
+	const tmpl = `---
+id: {{.Ticket}} 
+aliases: 
+tags:
+  - {{.Tag}}
+link: "[[{{.Tag}}]]"
+---
+
+# [[{{.Ticket}}]]
 
 ## Branch
 
