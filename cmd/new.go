@@ -83,6 +83,7 @@ func newDayTemplate() *template.Template {
 - [ ] check email
 - [ ] check calendar
 - [ ] check Slack
+- [ ] check home todo
 {{- if .ShowTimesheet }}
 - [ ] time sheet
 {{-  end }}
