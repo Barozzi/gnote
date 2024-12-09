@@ -1,3 +1,3 @@
 .PHONY: build
 build:
-	go build -o ~/tools/bin/new-day
+	go build -o ~/tools/bin/gnote

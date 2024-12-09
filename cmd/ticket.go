@@ -17,6 +17,7 @@ import (
 type TicketArgs struct {
 	Ticket   string
 	Tag      string
+	Link     string
 	Estimate int
 }
 
@@ -34,6 +35,7 @@ var ticketCmd = &cobra.Command{
 		var (
 			ticket   string
 			tag      string
+			link     string
 			estimate int
 		)
 		form := huh.NewForm(
@@ -43,7 +45,7 @@ var ticketCmd = &cobra.Command{
 					Value(&ticket),
 				huh.NewInput().
 					Title("What Tag should this ticket use?").
-					Value(&tag),
+					Value(&link),
 				huh.NewSelect[int]().
 					Title("How much work will this take?").
 					Options(
@@ -59,7 +61,8 @@ var ticketCmd = &cobra.Command{
 			fmt.Println(err)
 			return
 		}
-		makeTicket(TicketArgs{ticket, tag, estimate})
+		tag = strings.Replace(link, " ", "_", -1)
+		makeTicket(TicketArgs{ticket, tag, link, estimate})
 	},
 }
 
@@ -109,7 +112,11 @@ func investigationTemplate() *template.Template {
 
 ## Which docs have you consulted?
 
-## If you were creating a new solution from scratch, what would it look like?
+## Describe this change from First Principals
+
+### Core Components
+
+### Key Considerations
 
 `
 	return template.Must(template.New("DescTemplate").Parse(tmpl))
@@ -137,8 +144,8 @@ func descTemplate() *template.Template {
 id: {{.Ticket}} 
 aliases: 
 tags:
-  - {{.Tag}}
-link: "[[{{.Tag}}]]"
+  - '{{.Tag}}'
+link: "[[{{.Link}}]]"
 ---
 
 # [[{{.Ticket}}]]
