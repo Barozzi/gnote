@@ -1,60 +1,111 @@
-/*
-Copyright © 2023 Greg Barozzi barozzi@github.com
-*/
 package cmd
 
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"text/template"
 	"time"
 
-	"github.com/spf13/cobra"
 	"gnote/config"
+	"os/exec"
+
+	"github.com/spf13/cobra"
 )
 
 type DayArgs struct {
-	Day                  string // Formatted Day for the header
+	Day                  string
 	ShowTimesheet        bool
 	ShowWorkingWednesday bool
 	ShowExpenseTodo      bool
 }
 
-// newCmd represents the new command
+type Editor interface {
+	OpenFile(string) error
+}
+
+type NvimEditor struct{}
+
+func (n NvimEditor) OpenFile(filePath string) error {
+	vim := exec.Command("zsh", "-c", fmt.Sprintf("nvim %s", filePath))
+	vim.Stdin = os.Stdin
+	vim.Stdout = os.Stdout
+	vim.Stderr = os.Stderr
+	err := vim.Start()
+	if err != nil {
+		return fmt.Errorf("Vim failed to start correctly: %w", err)
+	}
+	err = vim.Wait()
+	if err != nil {
+		return fmt.Errorf("Vim failed to exit correctly: %w", err)
+	}
+	return nil
+}
+
 var dayCmd = &cobra.Command{
 	Use:   "day",
 	Short: "Create a new DevLog for the current day.",
 	Run: func(cmd *cobra.Command, args []string) {
 		timeNow := time.Now()
-		formattedDay := fmt.Sprintf("%s, %d %s %d\n", timeNow.Weekday(), timeNow.Day(), timeNow.Month().String(), timeNow.Year())
-		showTimesheet := timeNow.Weekday() == time.Friday
-		showWorkingWednesday := timeNow.Weekday() == time.Wednesday
-		showExpenseTodo := isLastWednesday(timeNow)
-		newDayArgs := DayArgs{formattedDay, showTimesheet, showWorkingWednesday, showExpenseTodo}
+		dayArgs := buildDayArgs(timeNow)
 
-		newDayT := newDayTemplate()
-
-		filePath, err := writeNewDay(newDayT, newDayArgs, timeNow)
+		filePath, err := createDayFile(dayArgs, timeNow)
 		if err != nil {
-			fmt.Println("Failed to write new-day template to file")
+			fmt.Printf("Failed to create day file: %s\n", err)
 			os.Exit(1)
 		}
-		vim := exec.Command("zsh", "-c", fmt.Sprintf("nvim %s", filePath))
-		vim.Stdin = os.Stdin
-		vim.Stdout = os.Stdout
-		vim.Stderr = os.Stderr
-		err = vim.Start()
-		if err != nil {
-			fmt.Printf("Vim failed to start correctly: %s\n", err)
-			os.Exit(1)
-		}
-		err = vim.Wait()
-		if err != nil {
-			fmt.Printf("Vim failed to exit correctly: %s\n", err)
+
+		editor := NvimEditor{} // Or inject this as a dependency
+		if err := editor.OpenFile(filePath); err != nil {
+			fmt.Printf("Failed to open file in editor: %s\n", err)
 			os.Exit(1)
 		}
 	},
+}
+
+func buildDayArgs(timeNow time.Time) DayArgs {
+	formattedDay := fmt.Sprintf("%s, %d %s %d\n", timeNow.Weekday(), timeNow.Day(), timeNow.Month().String(), timeNow.Year())
+	showTimesheet := timeNow.Weekday() == time.Friday
+	showWorkingWednesday := timeNow.Weekday() == time.Wednesday
+	showExpenseTodo := isLastWednesday(timeNow)
+	return DayArgs{
+		Day:                  formattedDay,
+		ShowTimesheet:        showTimesheet,
+		ShowWorkingWednesday: showWorkingWednesday,
+		ShowExpenseTodo:      showExpenseTodo,
+	}
+}
+
+func createDayFile(args DayArgs, timeNow time.Time) (string, error) {
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		return "", err
+	}
+
+	filePath := fmt.Sprintf("%s/%s/2024_Q4/%d-%d-%d.md", cfg.VaultPath, cfg.DayPath, timeNow.Month(), timeNow.Day(), timeNow.Year())
+
+	_, err = os.Stat(filePath)
+	if err == nil {
+		// File exists, don't overwrite (or handle differently)
+		return filePath, nil
+	}
+
+	if !os.IsNotExist(err) {
+		return "", err
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	newDayT := newDayTemplate()
+	err = newDayT.Execute(file, args)
+	if err != nil {
+		return "", err
+	}
+
+	return filePath, nil
 }
 
 func isLastWednesday(date time.Time) bool {
@@ -101,25 +152,4 @@ func newDayTemplate() *template.Template {
 `
 
 	return template.Must(template.New("newDayTemplate").Parse(newDayTemplate))
-}
-
-func writeNewDay(newDayT *template.Template, newDayArgs DayArgs, timeNow time.Time) (newDataFilePath string, fileWriteError error) {
-	// TODO - make the folder rotation be automated eg Q2 to Q3
-	cfg, err := config.ReadConfig()
-	if err != nil {
-		fmt.Printf("config.ReadConfig failed to read from file")
-		return "", err
-	}
-	filePath := fmt.Sprintf("%s/%s/2024_Q4/%d-%d-%d.md", cfg.VaultPath, cfg.DayPath, timeNow.Month(), timeNow.Day(), timeNow.Year())
-	fmt.Printf("Filepath: %s\n", filePath)
-	var file *os.File
-
-	_, err = os.Stat(filePath)
-	if os.IsNotExist(err) {
-		file, _ = os.Create(filePath)
-		defer file.Close()
-		return filePath, newDayT.Execute(file, newDayArgs)
-	} else {
-		return filePath, nil
-	}
 }
