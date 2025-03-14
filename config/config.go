@@ -16,7 +16,12 @@ type Config struct {
 	ArchivesPath string `yaml:"archives_subpath"`
 }
 
+var ReadConfigMock func() (*Config, error)
+
 func ReadConfig() (*Config, error) {
+	if ReadConfigMock != nil {
+		return ReadConfigMock()
+	}
 	usr, err := user.Current()
 	file, err := os.Open(fmt.Sprintf("%s/.config/gnote/gnote.yaml", usr.HomeDir))
 	if err != nil {

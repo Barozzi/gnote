@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/template"
 	"time"
 
@@ -81,7 +82,18 @@ func createDayFile(args DayArgs, timeNow time.Time) (string, error) {
 		return "", err
 	}
 
-	filePath := fmt.Sprintf("%s/%s/2024_Q4/%d-%d-%d.md", cfg.VaultPath, cfg.DayPath, timeNow.Month(), timeNow.Day(), timeNow.Year())
+	year := timeNow.Year()
+	quarter := getQuarter(timeNow)
+	quarterFolder := fmt.Sprintf("%d_Q%d", year, quarter)
+
+	folderPath := filepath.Join(cfg.VaultPath, cfg.DayPath, quarterFolder)
+
+	// Create the folder if it doesn't exist
+	if err := os.MkdirAll(folderPath, 0755); err != nil {
+		return "", err
+	}
+
+	filePath := filepath.Join(folderPath, fmt.Sprintf("%d-%d-%d.md", timeNow.Month(), timeNow.Day(), timeNow.Year()))
 
 	_, err = os.Stat(filePath)
 	if err == nil {
@@ -106,6 +118,22 @@ func createDayFile(args DayArgs, timeNow time.Time) (string, error) {
 	}
 
 	return filePath, nil
+}
+
+func getQuarter(date time.Time) int {
+	month := date.Month()
+	switch {
+	case month >= time.January && month <= time.March:
+		return 1
+	case month >= time.April && month <= time.June:
+		return 2
+	case month >= time.July && month <= time.September:
+		return 3
+	case month >= time.October && month <= time.December:
+		return 4
+	default:
+		return 0 // Should never happen
+	}
 }
 
 func isLastWeekdayOfMonth(date time.Time) bool {

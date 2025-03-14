@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"gnote/config"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -77,4 +80,157 @@ func TestBuildDayArgs(t *testing.T) {
 			}
 		})
 	}
+}
+
+// MockConfigReader allows us to control the config values during testing
+type MockConfigReader struct {
+	Config config.Config
+	Error  error
+}
+
+func (m MockConfigReader) ReadConfig() (*config.Config, error) {
+	return &m.Config, m.Error
+}
+
+// MockEditor allows us to avoid actually opening a file in an editor during testing
+type MockEditor struct {
+	OpenFileFunc func(string) error
+	FilePath     string
+}
+
+func TestCreateDayFileQuarterly(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Mock the config reader to return a known configuration
+	mockConfig := MockConfigReader{
+		Config: config.Config{
+			VaultPath: tempDir,
+			DayPath:   "days",
+		},
+		Error: nil,
+	}
+
+	config.ReadConfigMock = mockConfig.ReadConfig
+	defer func() { config.ReadConfigMock = nil }() // Restore original function
+
+	testCases := []struct {
+		name           string
+		time           time.Time
+		expectedFolder string
+		expectedFile   string
+	}{
+		{
+			name:           "Q1 1970",
+			time:           time.Date(1970, time.January, 25, 12, 0, 0, 0, time.UTC),
+			expectedFolder: filepath.Join(tempDir, "days", "1970_Q1"),
+			expectedFile:   filepath.Join(tempDir, "days", "1970_Q1", "1-25-1970.md"),
+		},
+		{
+			name:           "Q2 1970",
+			time:           time.Date(1970, time.April, 15, 12, 0, 0, 0, time.UTC),
+			expectedFolder: filepath.Join(tempDir, "days", "1970_Q2"),
+			expectedFile:   filepath.Join(tempDir, "days", "1970_Q2", "4-15-1970.md"),
+		},
+		{
+			name:           "Q3 1970",
+			time:           time.Date(1970, time.August, 10, 12, 0, 0, 0, time.UTC),
+			expectedFolder: filepath.Join(tempDir, "days", "1970_Q3"),
+			expectedFile:   filepath.Join(tempDir, "days", "1970_Q3", "8-10-1970.md"),
+		},
+		{
+			name:           "Q4 1970",
+			time:           time.Date(1970, time.December, 1, 12, 0, 0, 0, time.UTC),
+			expectedFolder: filepath.Join(tempDir, "days", "1970_Q4"),
+			expectedFile:   filepath.Join(tempDir, "days", "1970_Q4", "12-1-1970.md"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testArgs := DayArgs{
+				Day:                  "Test Day\n",
+				ShowTimesheet:        false,
+				ShowWorkingWednesday: false,
+				ShowExpenseTodo:      false,
+			}
+
+			filePath, err := createDayFile(testArgs, tc.time)
+			if err != nil {
+				t.Fatalf("createDayFile returned an error: %v", err)
+			}
+
+			if filePath != tc.expectedFile {
+				t.Errorf("Expected file path to be %q, but got %q", tc.expectedFile, filePath)
+			}
+
+			// Check if the folder was actually created
+			_, err = os.Stat(tc.expectedFolder)
+			if os.IsNotExist(err) {
+				t.Errorf("Expected folder to be created at %q, but it doesn't exist", tc.expectedFolder)
+			}
+
+			// Check if the file was actually created
+			_, err = os.Stat(filePath)
+			if os.IsNotExist(err) {
+				t.Errorf("Expected file to be created at %q, but it doesn't exist", filePath)
+			}
+
+			// Clean up temp dir - remove to test manually
+			os.RemoveAll(tempDir)
+		})
+	}
+}
+
+func TestCreateDayFile(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Mock the config reader to return a known configuration
+	mockConfig := MockConfigReader{
+		Config: config.Config{
+			VaultPath: tempDir,
+			DayPath:   "days",
+		},
+		Error: nil,
+	}
+
+	config.ReadConfigMock = mockConfig.ReadConfig
+	defer func() { config.ReadConfigMock = nil }() // Restore original function
+
+	// Test Time
+	testTime := time.Date(2024, time.January, 25, 12, 0, 0, 0, time.UTC)
+	testArgs := DayArgs{
+		Day:                  "Thursday, 25 January 2024\n",
+		ShowTimesheet:        false,
+		ShowWorkingWednesday: false,
+		ShowExpenseTodo:      false,
+	}
+
+	filePath, err := createDayFile(testArgs, testTime)
+	if err != nil {
+		t.Fatalf("createDayFile returned an error: %v", err)
+	}
+
+	expectedFolderPath := filepath.Join(tempDir, "days", "2024_Q1")
+	expectedFilePath := filepath.Join(expectedFolderPath, "1-25-2024.md")
+
+	if filePath != expectedFilePath {
+		t.Errorf("Expected file path to be %q, but got %q", expectedFilePath, filePath)
+	}
+
+	// Check if the folder was actually created
+	_, err = os.Stat(expectedFolderPath)
+	if os.IsNotExist(err) {
+		t.Errorf("Expected folder to be created at %q, but it doesn't exist", expectedFolderPath)
+	}
+
+	// Check if the file was actually created
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		t.Errorf("Expected file to be created at %q, but it doesn't exist", filePath)
+	}
+
+	// Clean up temp dir
+	os.RemoveAll(tempDir)
 }
