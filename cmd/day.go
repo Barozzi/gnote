@@ -54,7 +54,7 @@ var dayCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		editor := NvimEditor{} // Or inject this as a dependency
+		editor := NvimEditor{}
 		if err := editor.OpenFile(filePath); err != nil {
 			fmt.Printf("Failed to open file in editor: %s\n", err)
 			os.Exit(1)
@@ -66,7 +66,7 @@ func buildDayArgs(timeNow time.Time) DayArgs {
 	formattedDay := fmt.Sprintf("%s, %d %s %d\n", timeNow.Weekday(), timeNow.Day(), timeNow.Month().String(), timeNow.Year())
 	showTimesheet := timeNow.Weekday() == time.Friday
 	showWorkingWednesday := timeNow.Weekday() == time.Wednesday
-	showExpenseTodo := isLastWednesday(timeNow)
+	showExpenseTodo := isLastWeekdayOfMonth(timeNow)
 	return DayArgs{
 		Day:                  formattedDay,
 		ShowTimesheet:        showTimesheet,
@@ -85,7 +85,7 @@ func createDayFile(args DayArgs, timeNow time.Time) (string, error) {
 
 	_, err = os.Stat(filePath)
 	if err == nil {
-		// File exists, don't overwrite (or handle differently)
+		// File exists, don't overwrite
 		return filePath, nil
 	}
 
@@ -108,19 +108,26 @@ func createDayFile(args DayArgs, timeNow time.Time) (string, error) {
 	return filePath, nil
 }
 
-func isLastWednesday(date time.Time) bool {
+func isLastWeekdayOfMonth(date time.Time) bool {
 	// Get the last day of the month
+	// Using the zeroth day trick to get the last day of month
 	lastDay := time.Date(date.Year(), date.Month()+1, 0, 0, 0, 0, 0, date.Location())
 
-	// Find the last Wednesday
-	for lastDay.Weekday() != time.Wednesday {
-		lastDay = lastDay.AddDate(0, 0, -1)
+	// Check if the given date is one of the last weekdays of the month
+	for i := 0; i < 7; i++ {
+		currentDay := lastDay.AddDate(0, 0, -i)
+		// Only consider weekdays (Monday to Friday)
+		if currentDay.Weekday() >= time.Monday && currentDay.Weekday() <= time.Friday {
+			if currentDay.Weekday() == date.Weekday() &&
+				currentDay.Year() == date.Year() &&
+				currentDay.Month() == date.Month() &&
+				currentDay.Day() == date.Day() {
+				return true
+			}
+		}
 	}
 
-	// Compare the given date with the last Wednesday
-	return date.Year() == lastDay.Year() &&
-		date.Month() == lastDay.Month() &&
-		date.Day() == lastDay.Day()
+	return false
 }
 
 func init() {
