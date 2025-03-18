@@ -101,6 +101,7 @@ func createDayFile(args DayArgs, timeNow time.Time) (string, error) {
 		return filePath, nil
 	}
 
+	// I'm expecting a file-does-not-exist error; If its not that kind of error lets raise it up the stack
 	if !os.IsNotExist(err) {
 		return "", err
 	}
