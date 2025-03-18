@@ -1,10 +1,8 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"fmt"
+	"gnote/config"
 	"os"
 	"strings"
 	"text/template"
@@ -64,60 +62,71 @@ func (h *HuhInputCollector) Collect() (TicketArgs, error) {
 
 // FileGenerator interface
 type FileGenerator interface {
-	Generate(ticketArgs TicketArgs) error
+	Generate(ticketArgs TicketArgs, cfg *config.Config) error
 }
 
 type TemplateInfo struct {
 	template *template.Template
-	fpath    string
 }
 
 // TodoFileGenerator concrete implementation
 type TodoFileGenerator struct{ TemplateInfo }
 
-func (g *TodoFileGenerator) Generate(ticketArgs TicketArgs) error {
-	return writeProjectFile(g.template, ticketArgs, g.TemplateInfo.fpath)
+func (g *TodoFileGenerator) Generate(ticketArgs TicketArgs, cfg *config.Config) error {
+	projectPath := fmt.Sprintf("%s/%s/%s", cfg.VaultPath, cfg.ProjectsPath, ticketArgs.Ticket)
+	todoPath := fmt.Sprintf("%s/TODO.md", projectPath)
+	return writeProjectFile(g.template, ticketArgs, todoPath)
 }
 
 // DescFileGenerator concrete implementation
 type DescFileGenerator struct{ TemplateInfo }
 
-func (g *DescFileGenerator) Generate(ticketArgs TicketArgs) error {
-	return writeProjectFile(g.template, ticketArgs, g.TemplateInfo.fpath)
+func (g *DescFileGenerator) Generate(ticketArgs TicketArgs, cfg *config.Config) error {
+	projectPath := fmt.Sprintf("%s/%s/%s", cfg.VaultPath, cfg.ProjectsPath, ticketArgs.Ticket)
+	descPath := fmt.Sprintf("%s/%s.md", projectPath, ticketArgs.Ticket)
+	return writeProjectFile(g.template, ticketArgs, descPath)
 }
 
 // DescFileGenerator concrete implementation
 type InvestigationFileGenerator struct{ TemplateInfo }
 
-func (g *InvestigationFileGenerator) Generate(ticketArgs TicketArgs) error {
-	return writeProjectFile(g.template, ticketArgs, g.TemplateInfo.fpath)
+func (g *InvestigationFileGenerator) Generate(ticketArgs TicketArgs, cfg *config.Config) error {
+	projectPath := fmt.Sprintf("%s/%s/%s", cfg.VaultPath, cfg.ProjectsPath, ticketArgs.Ticket)
+	investigationPath := fmt.Sprintf("%s/Investigation.md", projectPath)
+	return writeProjectFile(g.template, ticketArgs, investigationPath)
 }
 
 // DescFileGenerator concrete implementation
 type EstimateFileGenerator struct{ TemplateInfo }
 
-func (g *EstimateFileGenerator) Generate(ticketArgs TicketArgs) error {
-	return writeProjectFile(g.template, ticketArgs, g.TemplateInfo.fpath)
+func (g *EstimateFileGenerator) Generate(ticketArgs TicketArgs, cfg *config.Config) error {
+	timeNow := time.Now()
+	dueDate := timeNow.AddDate(0, 0, ticketArgs.Estimate)
+	formattedDueDate := fmt.Sprintf("%s, %d %s %d\n", dueDate.Weekday(), dueDate.Day(), dueDate.Month().String(), dueDate.Year())
+	projectPath := fmt.Sprintf("%s/%s/%s", cfg.VaultPath, cfg.ProjectsPath, ticketArgs.Ticket)
+	estimatePath := fmt.Sprintf("%s/%s.md", projectPath, strings.TrimRight(formattedDueDate, " \t\n"))
+	return writeProjectFile(g.template, ticketArgs, estimatePath)
 }
 
 // ProjectCreator struct
 type ProjectCreator struct {
-	projectPath    string
+	cfg            *config.Config
 	fileGenerators []FileGenerator
 }
 
-func NewProjectCreator(projectPath string, fileGenerators []FileGenerator) *ProjectCreator {
-	return &ProjectCreator{projectPath: projectPath, fileGenerators: fileGenerators}
+func NewProjectCreator(cfg *config.Config, fileGenerators []FileGenerator) *ProjectCreator {
+	return &ProjectCreator{cfg: cfg, fileGenerators: fileGenerators}
 }
 
 func (pc *ProjectCreator) CreateProject(ticketArgs TicketArgs) error {
-	err := createProjectFolder(pc.projectPath)
+	projectPath := fmt.Sprintf("%s/%s/%s", pc.cfg.VaultPath, pc.cfg.ProjectsPath, ticketArgs.Ticket)
+	err := createProjectFolder(projectPath)
 	if err != nil {
 		return err
 	}
 
 	for _, generator := range pc.fileGenerators {
-		err := generator.Generate(ticketArgs)
+		err := generator.Generate(ticketArgs, pc.cfg)
 		if err != nil {
 			return err
 		}
@@ -132,40 +141,30 @@ var ticketCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  `A longer description...`,
 	Run: func(cmd *cobra.Command, args []string) {
-		collector := &HuhInputCollector{} // Or another implementation
+		cfg, err := config.ReadConfig()
+		if err != nil {
+			fmt.Println("Error reading config:", err)
+			return
+		}
+		collector := &HuhInputCollector{}
 		ticketArgs, err := collector.Collect()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		// Paths are application specific and break the single responsibility principle
-		timeNow := time.Now()
-		dueDate := timeNow.AddDate(0, 0, ticketArgs.Estimate)
-		formattedDueDate := fmt.Sprintf("%s, %d %s %d\n", dueDate.Weekday(), dueDate.Day(), dueDate.Month().String(), dueDate.Year())
-		projectPath := fmt.Sprintf("/Users/gb0218/vaults/work/01-projects/%s", ticketArgs.Ticket)
-		descPath := fmt.Sprintf("%s/%s.md", projectPath, ticketArgs.Ticket)
-		estimatePath := fmt.Sprintf("%s/%s.md", projectPath, strings.TrimRight(formattedDueDate, " \t\n"))
-		todoPath := fmt.Sprintf("%s/TODO.md", projectPath)
-		investigationPath := fmt.Sprintf("%s/Investigation.md", projectPath)
+		todoGenerator := &TodoFileGenerator{TemplateInfo{todoTemplate()}}
+		descGenerator := &DescFileGenerator{TemplateInfo{descTemplate()}}
+		estimateGenerator := &EstimateFileGenerator{TemplateInfo{estimateTemplate()}}
+		investigationGenerator := &InvestigationFileGenerator{TemplateInfo{investigationTemplate()}}
 
-		// Example with file paths passed into generator
-		todoGenerator := &TodoFileGenerator{TemplateInfo{todoTemplate(), todoPath}}
-		descGenerator := &DescFileGenerator{TemplateInfo{descTemplate(), descPath}}
-		estimateGenerator := &EstimateFileGenerator{TemplateInfo{estimateTemplate(), estimatePath}}
-		investigationGenerator := &InvestigationFileGenerator{TemplateInfo{investigationTemplate(), investigationPath}}
-
-		creator := NewProjectCreator(projectPath, []FileGenerator{todoGenerator, descGenerator, estimateGenerator, investigationGenerator})
+		creator := NewProjectCreator(cfg, []FileGenerator{todoGenerator, descGenerator, estimateGenerator, investigationGenerator})
 
 		err = creator.CreateProject(ticketArgs)
 		if err != nil {
 			fmt.Println(err)
 		}
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(ticketCmd)
 }
 
 func init() {
