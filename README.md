@@ -21,15 +21,17 @@ We use Jira at work and each time I pull a new ticket, I make a note folder to t
 
 ```
 $ gnote
-A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+ ▗▄▄▖▗▖  ▗▖ ▗▄▖▗▄▄▄▖▗▄▄▄▖
+▐▌   ▐▛▚▖▐▌▐▌ ▐▌ █  ▐▌
+▐▌▝▜▌▐▌ ▝▜▌▐▌ ▐▌ █  ▐▛▀▀▘
+▝▚▄▞▘▐▌  ▐▌▝▚▄▞▘ █  ▐▙▄▄▖
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.
+  GNote helps you manage your notes, dev logs, and projects
+by providing commands to quickly create and organize files.
+Use 'gnote [command] --help' for more information about a specific command.
 
 Usage:
-  new-day [command]
+  gnote [command]
 
 Available Commands:
   archive     Archive a project
@@ -40,8 +42,8 @@ Available Commands:
   ticket      A brief description of your command
 
 Flags:
-  -h, --help     help for new-day
+  -h, --help     help for gnote
   -t, --toggle   Help message for toggle
 
-Use "new-day [command] --help" for more information about a command.
+Use "gnote [command] --help" for more information about a command.
 ```
