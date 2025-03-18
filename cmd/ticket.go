@@ -138,8 +138,13 @@ func (pc *ProjectCreator) CreateProject(ticketArgs TicketArgs) error {
 // ticketCmd represents the ticket command
 var ticketCmd = &cobra.Command{
 	Use:   "ticket",
-	Short: "A brief description of your command",
-	Long:  `A longer description...`,
+	Short: "Create a new project folder populated with default files",
+	Long: `Follow a prompt to create a project folder containing:
+  1. Project description file
+  2. Investigation file
+  3. TODO file
+  4. Possibly, Estimate file
+  `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.ReadConfig()
 		if err != nil {

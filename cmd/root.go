@@ -1,6 +1,5 @@
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -10,21 +9,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "new-day",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Use:   "gnote",
+	Short: "GNote is a tool for quick note-taking and project organization.",
+	Long: `
+ ▗▄▄▖▗▖  ▗▖ ▗▄▖▗▄▄▄▖▗▄▄▄▖
+▐▌   ▐▛▚▖▐▌▐▌ ▐▌ █  ▐▌   
+▐▌▝▜▌▐▌ ▝▜▌▐▌ ▐▌ █  ▐▛▀▀▘
+▝▚▄▞▘▐▌  ▐▌▝▚▄▞▘ █  ▐▙▄▄▖
+                         
+  GNote helps you manage your notes, dev logs, and projects 
+by providing commands to quickly create and organize files. 
+Use 'gnote [command] --help' for more information about a specific command.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -47,5 +44,3 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
-
