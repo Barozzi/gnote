@@ -5,6 +5,7 @@ import (
 	"gnote/config"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
@@ -14,7 +15,7 @@ import (
 var archiveCmd = &cobra.Command{
 	Use:   "archive",
 	Short: "Archive a project",
-	Long:  `Moves a project folder from the projects directory to the archive directory.`,
+	Long:  `Moves a project folder from the projects directory to the archive directory, organized by quarter.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.ReadConfig()
 		if err != nil {
@@ -25,11 +26,18 @@ var archiveCmd = &cobra.Command{
 		projectsPath := filepath.Join(cfg.VaultPath, cfg.ProjectsPath)
 		archivePath := filepath.Join(cfg.VaultPath, cfg.ArchivesPath)
 
-		// Ensure archive directory exists
-		if _, err := os.Stat(archivePath); os.IsNotExist(err) {
-			err = os.MkdirAll(archivePath, 0755)
+		// Get the current year and quarter
+		timeNow := time.Now()
+		year := timeNow.Year()
+		quarter := getQuarter(timeNow)
+		quarterFolder := fmt.Sprintf("%d_Q%d", year, quarter)
+
+		// Create the quarter folder in the archive path
+		quarterArchivePath := filepath.Join(archivePath, quarterFolder)
+		if _, err := os.Stat(quarterArchivePath); os.IsNotExist(err) {
+			err = os.MkdirAll(quarterArchivePath, 0755)
 			if err != nil {
-				fmt.Println("Error creating archive directory:", err)
+				fmt.Println("Error creating archive quarter directory:", err)
 				return
 			}
 		}
@@ -65,7 +73,7 @@ var archiveCmd = &cobra.Command{
 
 		// Move folder
 		sourcePath := filepath.Join(projectsPath, selectedFolder)
-		destPath := filepath.Join(archivePath, selectedFolder)
+		destPath := filepath.Join(quarterArchivePath, selectedFolder) // Use quarterArchivePath
 
 		err = os.Rename(sourcePath, destPath)
 		if err != nil {
@@ -73,7 +81,7 @@ var archiveCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("Project '%s' archived successfully to '%s'\n", selectedFolder, archivePath)
+		fmt.Printf("Project '%s' archived successfully to '%s'\n", selectedFolder, quarterArchivePath)
 	},
 }
 
