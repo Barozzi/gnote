@@ -9,6 +9,22 @@ You need to close the repo
 You need to build the project locally `go build -o gnote`
 Run CLI `./gnote`
 
+My config file at `~/.config/gnote/gnote.yaml`
+
+```yaml
+---
+## Vault Path is where my Obsidian vault is located
+vault_path: /Users/gb0218/vaults/work
+## Subpaths are sub-folders of my obsidian vault
+day_subpath: "00-dev-log" ## Day is where my daily notes go.
+## PARA Method: Projects, Areas, Resources, Archives are organized via the PARA method of note taking
+## https://fortelabs.com/blog/para/
+projects_subpath: "01-projects"
+areas_subpath: "02-areas"
+resources_subpath: "03-resources"
+archives_subpath: "04-archives"
+```
+
 ## Background
 
 ### Command: gnote day
@@ -18,6 +34,8 @@ I have been using Obsidian through neovim. I make a new daily note each morning 
 ### Command: gnote ticket
 
 We use Jira at work and each time I pull a new ticket, I make a note folder to track my investigation, things I've done, things I'm going to do, etc. Doing this helps me when I get interrupted mid-feature and then come back to the ticket. When I have good notes, I find it easier to deal with having lots of unfinished tickets.
+
+I organize my notes using the PARA method.
 
 ```
 $ gnote
@@ -39,7 +57,7 @@ Available Commands:
   day         Create a new DevLog for the current day.
   help        Help about any command
   search      Search all DevLogs for a string match
-  ticket      A brief description of your command
+  ticket      Create a new unit of work folder with a standard set of files.
 
 Flags:
   -h, --help     help for gnote
